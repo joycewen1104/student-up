@@ -1,0 +1,5 @@
+{
+  "name": "Student Up",
+  "description": "一個專為教練與學生設計的健身管理平台，紀錄身高、體重、體脂及各項重訓數據，並提供智慧進度分析與建議。",
+  "requestFramePermissions": []
+}
