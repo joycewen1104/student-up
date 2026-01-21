@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { WorkoutSession, ExerciseRecord, Role, SportCategory } from '../types';
 
@@ -12,22 +11,46 @@ interface WorkoutHistoryProps {
   onDeleteSession: (workoutId: string) => void;
 }
 
-const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({ 
-  sessions, role, studentCategory, studentId, onAddSession, onUpdateSession, onDeleteSession 
+const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
+  sessions, role, studentCategory, studentId, onAddSession, onUpdateSession, onDeleteSession
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
-  
+
   const [coachNotes, setCoachNotes] = useState('');
-  const [statusUpdate, setStatusUpdate] = useState<{weight?: number, bodyFat?: number, injuries?: string}>({});
+  const [statusUpdate, setStatusUpdate] = useState<{ weight?: number, bodyFat?: number, injuries?: string }>({});
   const [currentExercises, setCurrentExercises] = useState<ExerciseRecord[]>([]);
 
   // Temp exercise states for weightlifting
   const [weightliftingEx, setWeightliftingEx] = useState<Partial<ExerciseRecord>>({});
-  
+
   // Swimming & Boxing specific state
   const [swimmingEx, setSwimmingEx] = useState<Partial<ExerciseRecord>>({ stroke: '自由式', progress: '' });
   const [boxingEx, setBoxingEx] = useState<Partial<ExerciseRecord>>({ isStrengthTraining: false, combinations: '' });
+
+  // Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', onConfirm: () => { } });
+
+  const closeConfirmModal = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const requestDeleteSession = (sessionId: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: '刪除訓練紀錄',
+      message: '🚨 確定要刪除此筆訓練紀錄嗎？\n此操作無法復原。',
+      onConfirm: () => {
+        onDeleteSession(sessionId);
+        closeConfirmModal();
+      }
+    });
+  };
 
   const categoryLabels: Record<SportCategory, string> = {
     workout: 'WORKOUT',
@@ -44,14 +67,14 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
         setCoachNotes(session.coachNotes);
         setStatusUpdate(session.recordedStats || {});
         setCurrentExercises(session.exercises);
-        
+
         // Special mapping for swimming/boxing as they use a "virtual" single exercise entry
         if (studentCategory === 'swimming' && session.exercises[0]) {
           setSwimmingEx({ stroke: session.exercises[0].stroke, progress: session.exercises[0].progress });
         } else if (studentCategory === 'boxing' && session.exercises[0]) {
           setBoxingEx({ isStrengthTraining: session.exercises[0].isStrengthTraining, combinations: session.exercises[0].combinations });
         }
-        
+
         setShowForm(true);
         window.scrollTo({ top: 100, behavior: 'smooth' });
       }
@@ -96,6 +119,7 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
         progress: swimmingEx.progress
       }];
     } else if (studentCategory === 'boxing') {
+      // Allow if either combinations are entered OR strength training is toggled OR stats are updated.
       if (!boxingEx.combinations && !boxingEx.isStrengthTraining && !statusUpdate.weight) return;
       finalExercises = [{
         id: Math.random().toString(36).substr(2, 9),
@@ -133,38 +157,38 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
         return (
           <div className="space-y-4">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <input 
-                placeholder="動作項目 (如：深蹲)" 
+              <input
+                placeholder="動作項目 (如：深蹲)"
                 className="border-2 border-sky-50 p-4 rounded-2xl col-span-2 text-sm font-bold focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all shadow-sm"
                 value={weightliftingEx.name || ''}
-                onChange={e => setWeightliftingEx({...weightliftingEx, name: e.target.value})}
+                onChange={e => setWeightliftingEx({ ...weightliftingEx, name: e.target.value })}
               />
-              <input 
-                placeholder="重量 (kg)" 
+              <input
+                placeholder="重量 (kg)"
                 type="number"
                 className="border-2 border-sky-50 p-4 rounded-2xl text-sm font-bold focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all shadow-sm"
                 value={weightliftingEx.weight || ''}
-                onChange={e => setWeightliftingEx({...weightliftingEx, weight: Number(e.target.value)})}
+                onChange={e => setWeightliftingEx({ ...weightliftingEx, weight: Number(e.target.value) })}
               />
-              <button 
+              <button
                 onClick={addWeightliftingExercise}
                 className="bg-sky-400 text-white rounded-2xl font-black text-sm hover:bg-sky-500 transition-all shadow-xl shadow-sky-100 active:scale-95"
               >
                 加入動作
               </button>
-              <input 
-                placeholder="次數" 
+              <input
+                placeholder="次數"
                 type="number"
                 className="border-2 border-sky-50 p-4 rounded-2xl text-sm font-bold focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all shadow-sm"
                 value={weightliftingEx.reps || ''}
-                onChange={e => setWeightliftingEx({...weightliftingEx, reps: Number(e.target.value)})}
+                onChange={e => setWeightliftingEx({ ...weightliftingEx, reps: Number(e.target.value) })}
               />
-              <input 
-                placeholder="組數" 
+              <input
+                placeholder="組數"
                 type="number"
                 className="border-2 border-sky-50 p-4 rounded-2xl text-sm font-bold focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all shadow-sm"
                 value={weightliftingEx.sets || ''}
-                onChange={e => setWeightliftingEx({...weightliftingEx, sets: Number(e.target.value)})}
+                onChange={e => setWeightliftingEx({ ...weightliftingEx, sets: Number(e.target.value) })}
               />
             </div>
             {currentExercises.length > 0 && (
@@ -174,11 +198,11 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                   {currentExercises.map((ex, i) => (
                     <div key={i} className="text-xs font-bold text-sky-900 bg-white p-4 rounded-2xl flex justify-between items-center shadow-sm border border-sky-50">
                       <div className="flex items-center space-x-3">
-                        <span className="w-6 h-6 rounded-lg bg-sky-400 text-white flex items-center justify-center text-[10px]">{i+1}</span>
+                        <span className="w-6 h-6 rounded-lg bg-sky-400 text-white flex items-center justify-center text-[10px]">{i + 1}</span>
                         <span>{ex.name}: <span className="text-sky-500">{ex.weight}kg</span> x {ex.reps}次 x {ex.sets}組</span>
                       </div>
                       <button onClick={() => setCurrentExercises(prev => prev.filter((_, idx) => idx !== i))} className="p-2 text-red-400 hover:bg-red-50 rounded-xl transition-all">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="3"/></svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth="3" /></svg>
                       </button>
                     </div>
                   ))}
@@ -197,12 +221,11 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                   <button
                     key={s}
                     type="button"
-                    onClick={() => setSwimmingEx({...swimmingEx, stroke: s as any})}
-                    className={`p-4 rounded-2xl font-black text-sm border-2 transition-all ${
-                      swimmingEx.stroke === s 
-                      ? 'border-sky-400 bg-sky-400 text-white shadow-lg shadow-sky-100' 
+                    onClick={() => setSwimmingEx({ ...swimmingEx, stroke: s as any })}
+                    className={`p-4 rounded-2xl font-black text-sm border-2 transition-all ${swimmingEx.stroke === s
+                      ? 'border-sky-400 bg-sky-400 text-white shadow-lg shadow-sky-100'
                       : 'border-sky-50 bg-white text-sky-300 hover:border-sky-200 shadow-sm'
-                    }`}
+                      }`}
                   >
                     {s}
                   </button>
@@ -211,11 +234,11 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             </div>
             <div>
               <label className="block text-[10px] font-black text-sky-300 uppercase tracking-widest mb-2 ml-1">訓練進度紀錄</label>
-              <textarea 
+              <textarea
                 className="w-full border-2 border-sky-50 p-5 rounded-[32px] text-sm font-bold text-sky-900 focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all min-h-[140px] shadow-sm"
                 placeholder="例如：主項 1500m 穩定配速完成..."
                 value={swimmingEx.progress || ''}
-                onChange={e => setSwimmingEx({...swimmingEx, progress: e.target.value})}
+                onChange={e => setSwimmingEx({ ...swimmingEx, progress: e.target.value })}
               />
             </div>
           </div>
@@ -223,26 +246,25 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
       case 'boxing':
         return (
           <div className="space-y-6">
-            <div 
-              onClick={() => setBoxingEx({...boxingEx, isStrengthTraining: !boxingEx.isStrengthTraining})}
-              className={`flex items-center justify-between p-6 rounded-[32px] border-2 cursor-pointer transition-all ${
-                boxingEx.isStrengthTraining ? 'bg-sky-400 border-sky-400 text-white shadow-xl shadow-sky-100' : 'bg-white border-sky-50 text-sky-300 shadow-sm'
-              }`}
+            <div
+              onClick={() => setBoxingEx({ ...boxingEx, isStrengthTraining: !boxingEx.isStrengthTraining })}
+              className={`flex items-center justify-between p-6 rounded-[32px] border-2 cursor-pointer transition-all ${boxingEx.isStrengthTraining ? 'bg-sky-400 border-sky-400 text-white shadow-xl shadow-sky-100' : 'bg-white border-sky-50 text-sky-300 shadow-sm'
+                }`}
             >
               <div className="flex items-center space-x-4">
                 <span className="font-black text-lg tracking-tight">今日包含肌力訓練計畫</span>
               </div>
               <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors ${boxingEx.isStrengthTraining ? 'bg-white text-sky-400 shadow-lg' : 'bg-sky-50'}`}>
-                {boxingEx.isStrengthTraining && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="4"/></svg>}
+                {boxingEx.isStrengthTraining && <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7" strokeWidth="4" /></svg>}
               </div>
             </div>
             <div>
               <label className="block text-[10px] font-black text-sky-300 uppercase tracking-widest mb-2 ml-1">組合拳訓練細節</label>
-              <textarea 
+              <textarea
                 className="w-full border-2 border-sky-50 p-5 rounded-[32px] text-sm font-bold text-sky-900 focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all min-h-[140px] shadow-sm"
                 placeholder="例如：1-2-3-Hook 組合練習..."
                 value={boxingEx.combinations || ''}
-                onChange={e => setBoxingEx({...boxingEx, combinations: e.target.value})}
+                onChange={e => setBoxingEx({ ...boxingEx, combinations: e.target.value })}
               />
             </div>
           </div>
@@ -254,17 +276,45 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-sky-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[40px] shadow-2xl w-full max-w-sm p-8 animate-in zoom-in-95 duration-200 border-2 border-sky-100">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h3 className="text-2xl font-black text-center text-sky-900 mb-4">{confirmModal.title}</h3>
+            <p className="text-sky-600 font-bold text-center mb-8 whitespace-pre-line leading-relaxed">
+              {confirmModal.message}
+            </p>
+            <div className="flex space-x-4">
+              <button
+                onClick={closeConfirmModal}
+                className="flex-1 bg-sky-50 text-sky-400 py-4 rounded-2xl font-black hover:bg-sky-100 transition-all"
+              >
+                取消
+              </button>
+              <button
+                onClick={confirmModal.onConfirm}
+                className="flex-1 bg-red-400 text-white py-4 rounded-2xl font-black shadow-lg hover:bg-red-500 transition-all"
+              >
+                確認刪除
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center bg-white p-8 rounded-[40px] border border-sky-100 shadow-sm overflow-hidden relative">
         <div className="absolute top-0 left-0 w-2 h-full bg-sky-400"></div>
         <div>
           <h3 className="text-2xl font-black text-sky-900 tracking-tight">訓練歷程資料庫</h3>
           <p className="text-sky-300 text-xs font-black uppercase tracking-widest">{categoryLabels[studentCategory]} DATABASE</p>
         </div>
-        <button 
-          onClick={() => { if(showForm) resetForm(); else setShowForm(true); }}
-          className={`px-8 py-4 rounded-[24px] text-sm font-black transition-all shadow-xl active:scale-95 flex items-center space-x-2 ${
-            showForm ? 'bg-sky-50 text-sky-400 shadow-none' : 'bg-sky-400 text-white shadow-sky-100 hover:bg-sky-500'
-          }`}
+        <button
+          onClick={() => { if (showForm) resetForm(); else setShowForm(true); }}
+          className={`px-8 py-4 rounded-[24px] text-sm font-black transition-all shadow-xl active:scale-95 flex items-center space-x-2 ${showForm ? 'bg-sky-50 text-sky-400 shadow-none' : 'bg-sky-400 text-white shadow-sky-100 hover:bg-sky-500'
+            }`}
         >
           <span>{showForm ? '取消並返回' : '新增紀錄'}</span>
         </button>
@@ -282,32 +332,32 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
           <div className="bg-sky-50/50 p-8 rounded-[32px] border-2 border-sky-50 space-y-4">
             <h4 className="text-[10px] font-black text-sky-400 uppercase tracking-widest ml-1">身體數據更新</h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <input 
+              <input
                 placeholder="體重 (kg)" type="number"
                 className="border-2 border-white p-4 rounded-2xl text-sm font-bold focus:border-sky-400 outline-none transition-all shadow-sm"
                 value={statusUpdate.weight || ''}
-                onChange={e => setStatusUpdate({...statusUpdate, weight: Number(e.target.value)})}
+                onChange={e => setStatusUpdate({ ...statusUpdate, weight: Number(e.target.value) })}
               />
-              <input 
+              <input
                 placeholder="體脂 (%)" type="number"
                 className="border-2 border-white p-4 rounded-2xl text-sm font-bold focus:border-sky-400 outline-none transition-all shadow-sm"
                 value={statusUpdate.bodyFat || ''}
-                onChange={e => setStatusUpdate({...statusUpdate, bodyFat: Number(e.target.value)})}
+                onChange={e => setStatusUpdate({ ...statusUpdate, bodyFat: Number(e.target.value) })}
               />
-              <input 
-                placeholder="目前傷勢" 
+              <input
+                placeholder="目前傷勢"
                 className="border-2 border-white p-4 rounded-2xl text-sm font-bold focus:border-sky-400 outline-none transition-all shadow-sm"
                 value={statusUpdate.injuries || ''}
-                onChange={e => setStatusUpdate({...statusUpdate, injuries: e.target.value})}
+                onChange={e => setStatusUpdate({ ...statusUpdate, injuries: e.target.value })}
               />
             </div>
           </div>
-          
+
           {renderForm()}
 
           <div className="pt-6 border-t border-sky-50">
             <label className="block text-[10px] font-black text-sky-300 uppercase tracking-widest mb-3 ml-1">教練點評</label>
-            <textarea 
+            <textarea
               rows={3}
               placeholder="專業修正規劃..."
               className="w-full border-2 border-sky-50 rounded-[32px] p-6 text-sm font-bold text-sky-900 focus:border-sky-400 focus:bg-sky-50/20 outline-none transition-all shadow-sm"
@@ -316,7 +366,7 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             />
           </div>
 
-          <button 
+          <button
             onClick={submitSession}
             className="w-full bg-sky-400 text-white py-6 rounded-[32px] font-black text-xl hover:bg-sky-500 transition-all shadow-2xl shadow-sky-200 active:scale-95"
           >
@@ -326,16 +376,22 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
       )}
 
       <div className="space-y-8">
-        {[...sessions].sort((a,b) => b.date.localeCompare(a.date)).map((session) => (
+        {[...sessions].sort((a, b) => b.date.localeCompare(a.date)).map((session) => (
           <div key={session.id} className="bg-white border border-sky-100 rounded-[48px] p-10 shadow-sm hover:shadow-xl hover:shadow-sky-50 transition-all duration-500 border-l-8 border-l-sky-400 relative overflow-hidden">
             <div className="flex justify-between items-start mb-8 pb-6 border-b border-sky-50">
               <div>
-                <div className="text-3xl font-black text-sky-900 tracking-tighter mb-1">{session.date}</div>
+                <div className="text-3xl font-black text-sky-900 tracking-tighter mb-1">
+                  {new Date(session.date).toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                  }).replace(/\//g, '-')}
+                </div>
                 <div className="text-[10px] text-sky-200 font-black tracking-[0.2em] uppercase">RECORD: {session.id.slice(-6)}</div>
               </div>
-              
+
               <div className="flex space-x-2">
-                <button 
+                <button
                   onClick={() => handleEditClick(session)}
                   className="p-3 bg-sky-50 text-sky-400 rounded-2xl hover:bg-sky-400 hover:text-white transition-all shadow-sm"
                   title="修改紀錄"
@@ -344,8 +400,8 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
                 </button>
-                <button 
-                  onClick={() => onDeleteSession(session.id)}
+                <button
+                  onClick={() => requestDeleteSession(session.id)}
                   className="p-3 bg-red-50 text-red-400 rounded-2xl hover:bg-red-400 hover:text-white transition-all shadow-sm"
                   title="刪除紀錄"
                 >
@@ -355,7 +411,7 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
                 </button>
               </div>
             </div>
-            
+
             <div className="space-y-6">
               {session.recordedStats && (
                 <div className="p-4 bg-sky-50/30 rounded-2xl border border-sky-100 flex flex-wrap gap-4">
