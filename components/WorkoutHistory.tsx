@@ -413,7 +413,7 @@ const WorkoutHistory: React.FC<WorkoutHistoryProps> = ({
             </div>
 
             <div className="space-y-6">
-              {session.recordedStats && (
+              {session.recordedStats && (session.recordedStats.weight || session.recordedStats.bodyFat || session.recordedStats.injuries) && (
                 <div className="p-4 bg-sky-50/30 rounded-2xl border border-sky-100 flex flex-wrap gap-4">
                   {session.recordedStats.weight && <div className="text-xs font-bold text-sky-800"><span className="text-sky-300">體重:</span> {session.recordedStats.weight}kg</div>}
                   {session.recordedStats.bodyFat && <div className="text-xs font-bold text-sky-800"><span className="text-sky-300">體脂:</span> {session.recordedStats.bodyFat}%</div>}
